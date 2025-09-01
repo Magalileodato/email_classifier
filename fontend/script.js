@@ -1,71 +1,62 @@
-// ==========================================
-// Frontend para envio de texto ou arquivo ao backend Flask
-// Funciona localmente (localhost) e no Render (URL pública)
-// ==========================================
-
-// Variável que irá armazenar a URL do backend
-let BACKEND_URL;
-
-// ================================
-// 1️⃣ Detecta ambiente e define URL do backend
-// ================================
-if (window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost") {
-    BACKEND_URL = "http://127.0.0.1:5000"; // backend local Flask
-    console.log("Frontend em localhost → usando backend local:", BACKEND_URL);
-} else {
-    BACKEND_URL = "https://classificador-de-email.onrender.com"; // backend Render
-    console.log("Frontend em produção → usando backend Render:", BACKEND_URL);
-}
-
-// ================================
-// 2️⃣ Seleciona o botão de envio e adiciona evento de clique
-// ================================
-document.getElementById('submitBtn').addEventListener('click', async () => {
+// ===========================
+// Listener do botão de envio
+// ===========================
+document.getElementById('sendButton').addEventListener('click', async () => {
     try {
-        // Captura os dados do usuário
-        const emailText = document.getElementById('emailText').value;
-        const emailFile = document.getElementById('emailFile').files[0];
-        let response;
+        // ===========================
+        // Captura o texto do input
+        // ===========================
+        const text = document.getElementById('emailText').value.trim();
 
-        // Caso 1: texto digitado
-        if (emailText) {
-            console.log("Enviando texto para:", BACKEND_URL + "/process");
-            response = await fetch(`${BACKEND_URL}/process`, {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ text: emailText })
-            });
-
-        // Caso 2: arquivo enviado
-        } else if (emailFile) {
-            console.log("Enviando arquivo para:", BACKEND_URL + "/process-file");
-            const formData = new FormData();
-            formData.append('file', emailFile);
-
-            response = await fetch(`${BACKEND_URL}/process-file`, {
-                method: 'POST',
-                body: formData
-            });
-
-        } else {
-            alert("Por favor, insira o texto ou envie um arquivo.");
+        if (!text) {
+            alert("Por favor, insira algum texto para processar.");
             return;
         }
 
-        // Checa se o backend retornou erro
+        // ===========================
+        // Define a URL do backend
+        // ===========================
+        // Se estiver rodando localmente, usa localhost
+        // Caso contrário, usa o domínio do Render
+        const backendURL = window.location.hostname === "127.0.0.1" || window.location.hostname === "localhost"
+            ? "http://127.0.0.1:5000/process"
+            : "https://seu_servico.onrender.com/process"; // Substitua pelo seu domínio Render
+
+        // ===========================
+        // Faz a requisição POST para o backend
+        // ===========================
+        const response = await fetch(backendURL, {
+            method: "POST",                        // Método HTTP
+            headers: {
+                "Content-Type": "application/json" // Tipo de conteúdo JSON
+            },
+            body: JSON.stringify({ text: text })   // Envia o texto como JSON
+        });
+
+        // ===========================
+        // Verifica se a resposta foi OK
+        // ===========================
         if (!response.ok) {
-            const errorData = await response.json();
-            throw new Error(errorData.error || "Erro desconhecido do backend.");
+            throw new Error(`Erro do servidor: ${response.status} ${response.statusText}`);
         }
 
+        // ===========================
+        // Converte a resposta em JSON
+        // ===========================
         const data = await response.json();
 
-        // Mostra os resultados
+        // ===========================
+        // Mostra os resultados no frontend
+        // ===========================
         document.getElementById('category').innerText = data.category;
         document.getElementById('response').innerText = data.suggested_response;
+        document.getElementById('preprocessed').innerText = data.preprocessed || "";
 
     } catch (error) {
+        // ===========================
+        // Tratamento de erros
+        // ===========================
         console.error("Erro ao processar o email:", error);
-        alert("Erro ao processar o email: " + error);
+        alert("Erro ao processar o email: " + error.message);
     }
 });

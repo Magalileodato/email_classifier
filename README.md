@@ -1,158 +1,108 @@
-#  Classificador de E-mails – AutoU Challenge
+# 📨 Classificador de E-mails – AutoU Challenge
 
 ![Python](https://img.shields.io/badge/Python-3.10+-blue)
-![Licença](https://img.shields.io/badge/Licença-MIT-green)
+![Flask](https://img.shields.io/badge/Flask-Backend-orange)
 ![Status](https://img.shields.io/badge/Status-Concluído-brightgreen)
+![License](https://img.shields.io/badge/License-MIT-green)
 
-Classificação de e-mails em **Produtivo** ou **Improdutivo**, com **resposta automática** e interface web interativa.  
-Demonstração de **IA aplicada a texto**, boas práticas de desenvolvimento e deploy em nuvem.
-
-
-##  Demonstração
-
-![Demonstração do Classificador](https://media.giphy.com/media/3o7TKy0LzZpRXgQy3O/giphy.gif)  
-> GIF ilustrativo do upload de e-mails e exibição da categoria/resposta.
+Classificação de e-mails em **Produtivo / Improdutivo**, com **resposta automática**, interface web interativa e deploy em nuvem.  
+Funciona **localmente** e em **Render**.
 
 
-## 🔹 Funcionalidades
+## 🎬 Demonstração Visual
 
-- Upload de arquivos `.txt` ou `.pdf` ou inserção direta de texto.
-- Classificação automática: *Produtivo* / *Improdutivo*.
-- Sugestão de resposta automática baseada na categoria.
-- Interface web simples e intuitiva.
-- Deploy em nuvem com link público funcional (Render).
+![GIF Demonstração](assets/demo.gif)  
+> GIF ilustrativo mostrando upload de e-mails e exibição da categoria/resposta.
 
-
-## 🛠 Tecnologias Utilizadas
-
-- Python 3.10+
-- Flask (ou FastAPI) para backend web
-- HTML/CSS/JS para frontend
-- OpenAI GPT ou Hugging Face Transformers para NLP
-- Pip / Virtualenv
-- Deploy em [Render](https://render.com)
+> ⚠️ Caso a OpenAI API não esteja disponível ou a quota seja excedida, o backend usa **resposta simulada** garantindo funcionalidade completa.
 
 
-### Estrutura de Arquivos
+## 🔹 Funcionalidades Principais
 
-```text
-email_classifier/
-│
-├─ main.py                  # Arquivo principal do backend
-├─ email_classifier/        # Módulos de processamento e classificação
-│   └─ classifier.py
-├─ templates/               # HTML da interface
-│   └─ index.html
-├─ static/                  # CSS, JS, imagens
-├─ requirements.txt         # Dependências do projeto
-├─ .gitignore               # Ignora arquivos sensíveis e venv
-├─ README.md                # Este arquivo
-├─ .env                     # Variáveis de ambiente (não versionar)
-└─ venv/                    # Ambiente virtual (não versionar)
+- 📄 Upload de arquivos `.txt` ou `.pdf` ou inserção direta de texto  
+- ⚡ Classificação automática: **Produtivo / Improdutivo**  
+- 🤖 Resposta automática via ChatGPT ou **fallback simulado**  
+- 💻 Interface web simples e intuitiva  
+- ☁️ Deploy público funcional em Render  
 
-Pré-requisitos
 
-Python 3.10+
+## 🧪 Teste Rápido do Backend
 
-Pip
+### 1️⃣ Testar texto direto
 
-Chave da OpenAI
+```bash
+curl -X POST http://localhost:5000/process \
+-H "Content-Type: application/json" \
+-d '{"text": "Preciso de ajuda com o relatório"}'
+2️⃣ Testar arquivo .txt ou .pdf
+bash
+Copiar código
+curl -X POST http://localhost:5000/process-file \
+-F "file=@/c/Users/magal/Desktop/exemplo.txt"
+Exemplo de resposta (simulada):
 
-Navegador moderno
-
-### Configuração do Ambiente
-1. Criar e ativar ambiente virtual
+json
+Copiar código
+{
+  "category": "Produtivo",
+  "preprocessed": "texto limpo",
+  "scores": {"Improdutivo": 0.34, "Produtivo": 0.66},
+  "suggested_response": "[SIMULADO] Seu texto foi classificado como 'Produtivo'."
+}
+⚙️ Configuração Rápida
+bash
+Copiar código
+# Criar e ativar ambiente virtual
 python -m venv venv
+
 # Windows
 venv\Scripts\activate
+
 # Mac/Linux
 source venv/bin/activate
 
-2. Instalar dependências
+# Instalar dependências
 pip install -r requirements.txt
 
-3. Configurar chave da OpenAI
+# Configurar chave OpenAI (opcional)
+echo "OPENAI_API_KEY=sua_chave_openai_aqui" > .env
 
-Crie .env na raiz do projeto:
-
-OPENAI_API_KEY=sua_chave_openai_aqui
-
-
-Nunca versionar .env no GitHub.
-
-Alternativamente, configurar como variável de ambiente:
-
-# Windows
-setx OPENAI_API_KEY "sua_chave_openai_aqui"
-# Mac/Linux
-export OPENAI_API_KEY="sua_chave_openai_aqui"
-
-###Executando o Projeto Localmente
+# Executar backend
 python main.py
+Acesse: http://localhost:5000
 
+☁️ Deploy Render
+🔒 SSL automático e subdomínio próprio
 
-Abra no navegador http://localhost:5000.
+🔄 Deploy contínuo via GitHub
 
-Faça upload ou insira o texto do e-mail.
+🌐 Link funcional: https://seu-projeto.onrender.com
 
-Confira categoria e sugestão de resposta automática.
+📝 Boas Práticas
+❌ Não versionar .env ou venv
 
-#### Deploy em Nuvem (Render)
+🧩 Modularidade no backend
 
-A aplicação está hospedada na plataforma Render, que permite deploy rápido, seguro e gratuito, com integração contínua ao GitHub.
+📚 README claro e organizado
 
-Plataforma: Render
+🔄 Projeto reprodutível por qualquer usuário
 
-Link funcional:
+🤝 Como Contribuir
+bash
+Copiar código
+# Fork do repositório
+git clone <seu-repo>
+cd <seu-repo>
 
-https://seu-projeto.onrender.com
-
-Vantagens do Deploy no Render
-
-SSL automático e subdomínio próprio.
-
-Deploy contínuo via GitHub.
-
-Fácil escalabilidade e manutenção.
-
-Ambiente seguro sem exposição de variáveis sensíveis.
-
-### Atualizando Dependências
-pip install <pacote>
-pip freeze > requirements.txt
-
-### Boas Práticas
-
-Não versionar .env ou venv.
-
-Modularidade no backend.
-
-README completo e claro.
-
-Projeto reprodutível por qualquer usuário.
-### Como Contribuir
-
-Faça fork do repositório.
-
-Crie uma branch para sua feature:
-
+# Criar branch para nova feature
 git checkout -b minha-feature
 
-
-Faça commit das alterações:
-
+# Commit e push
 git commit -m "Minha feature"
-
-
-Envie para o repositório remoto:
-
 git push origin minha-feature
 
-
-Abra um Pull Request detalhando a alteração.
-
-###Referências
-
+# Abrir Pull Request
+📚 Referências
 Documentação Python
 
 OpenAI API
@@ -161,24 +111,14 @@ Hugging Face Transformers
 
 GitHub Secret Scanning
 
-~###Licença
+🏆 Entregáveis
+Código fonte completo (.py, .ipynb)
 
-MIT License. Consulte o arquivo LICENSE no repositório.
-
-#### Entregáveis
-
-Código Fonte completo no GitHub:
-
-Scripts Python (.py, .ipynb)
-
-HTML/CSS/JS
+HTML/CSS/JS do frontend
 
 requirements.txt
 
-Dados de exemplo (se necessário)
 
-README detalhado
+README detalhado e organizado
 
-Estrutura organizada
-
-Link da aplicação hospedada em nuvem (Render), funcional e acessível publicamente
+Link da aplicação hospedada em nuvem (Render)

@@ -3,19 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <title>Email Classifier</title>
-    <!-- Link para o CSS da página -->
+    <!-- =========================
+         Link para o CSS da página
+         ========================= -->
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <!-- Container centralizado para a aplicação -->
+    <!-- =========================
+         Container centralizado para a aplicação
+         ========================= -->
     <div class="container">
-        <!-- Título da aplicação -->
+        <!-- =========================
+             Título da aplicação
+             ========================= -->
         <h1>Email Classifier</h1>
         
         <!-- =========================
              Formulário de envio de email
              ========================= -->
-        
         <!-- Textarea permite colar o texto do email -->
         <textarea id="emailText" placeholder="Cole o texto do email aqui..."></textarea>
         
@@ -42,10 +47,10 @@
     <script>
         // =========================
         // Ajuste automático da URL do backend
+        // Local: localhost:5000
+        // Render: URL pública do serviço
         // =========================
-        // Se estiver local, use localhost:5000
-        // Se estiver no Render, use a URL pública do serviço
-        const RENDER_URL = window.location.hostname.includes('localhost') 
+        const BACKEND_URL = window.location.hostname.includes('localhost') 
             ? 'http://127.0.0.1:5000' 
             : 'https://SEU_SERVICO.onrender.com'; // <-- substitua pela sua URL pública
 
@@ -53,7 +58,10 @@
         // Seleciona o botão de envio e adiciona evento de clique
         // =========================
         document.getElementById('submitBtn').addEventListener('click', async () => {
-            const emailText = document.getElementById('emailText').value;
+            // =========================
+            // Captura valores do formulário
+            // =========================
+            const emailText = document.getElementById('emailText').value.trim();
             const emailFile = document.getElementById('emailFile').files[0];
 
             try {
@@ -63,7 +71,7 @@
                 // Caso 1: texto digitado
                 // =========================
                 if (emailText) {
-                    response = await fetch(`${RENDER_URL}/process`, {
+                    response = await fetch(`${BACKEND_URL}/process`, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({ text: emailText })
@@ -76,7 +84,7 @@
                     const formData = new FormData();
                     formData.append('file', emailFile);
 
-                    response = await fetch(`${RENDER_URL}/process-file`, {
+                    response = await fetch(`${BACKEND_URL}/process-file`, {
                         method: 'POST',
                         body: formData
                     });
@@ -90,14 +98,29 @@
                 }
 
                 // =========================
-                // Processa a resposta do backend
+                // Verifica se a resposta foi OK
+                // =========================
+                if (!response.ok) {
+                    throw new Error(`Erro do servidor: ${response.status} ${response.statusText}`);
+                }
+
+                // =========================
+                // Converte a resposta em JSON
                 // =========================
                 const data = await response.json();
-                document.getElementById('category').innerText = data.category;
-                document.getElementById('response').innerText = data.suggested_response;
+
+                // =========================
+                // Atualiza HTML com resultados
+                // =========================
+                document.getElementById('category').innerText = data.category || '---';
+                document.getElementById('response').innerText = data.suggested_response || '---';
 
             } catch (error) {
-                alert("Erro ao processar o email: " + error);
+                // =========================
+                // Caso ocorra erro na requisição
+                // =========================
+                console.error("Erro ao processar o email:", error);
+                alert("Erro ao processar o email. Veja o console para mais detalhes.");
             }
         });
     </script>

@@ -1,96 +1,165 @@
-/* Estilo global do corpo da página */
+/* =========================
+   Estilo Global do corpo da página
+   ========================= */
+* {
+    box-sizing: border-box; /* Garante que padding e borda não aumentem largura */
+}
+
 body {
-    font-family: Arial, sans-serif;
-    background-color: #f0f2f5; /* fundo leve */
-    display: flex;
-    justify-content: center;
-    padding: 20px;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
     margin: 0;
+    padding: 0;
+    min-height: 100vh;
+    display: flex;
+    justify-content: center; /* Centraliza horizontal */
+    align-items: center;     /* Centraliza vertical */
+    color: #333;
+
+    /* GIF de fundo futurista */
+    background: url('https://i.gifer.com/J59.gif') no-repeat center center fixed;
+    background-size: cover;
 }
 
-/* Container centralizado com sombra e borda arredondada */
+/* Overlay para legibilidade */
+body::before {
+    content: "";
+    position: fixed;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.4);
+    z-index: 0;
+}
+
+/* Container principal */
 .container {
-    background-color: white;
-    padding: 30px;
-    border-radius: 10px;
-    box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
+    position: relative;
+    z-index: 1;
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 40px 30px; /* padding lateral ajustado */
+    border-radius: 15px;
+    box-shadow: 0 15px 35px rgba(0,0,0,0.2);
     width: 90%;
-    max-width: 500px; /* largura máxima */
-    box-sizing: border-box;
+    max-width: 550px;
+    margin: auto; /* garante centralização */
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
 }
 
-/* Título da aplicação */
+/* Efeito hover do container */
+.container:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.25);
+}
+
+/* Título principal */
 h1 {
     text-align: center;
-    margin-bottom: 20px;
-    color: #333;
+    margin-bottom: 25px;
+    color: #1f3b5f;
+    font-size: 28px;
+    letter-spacing: 1px;
 }
 
-/* Textarea para digitar o email */
+/* Textarea para digitar email */
 textarea {
     width: 100%;
-    height: 150px;
-    margin-bottom: 10px;
-    padding: 10px;
-    resize: none; /* evita redimensionamento */
+    height: 160px;
+    margin-bottom: 15px;
+    padding: 15px;
+    resize: none;
     font-family: inherit;
-    font-size: 14px;
-    box-sizing: border-box;
-    border: 1px solid #ccc;
-    border-radius: 5px;
+    font-size: 15px;
+    border: 2px solid #d0d7de;
+    border-radius: 8px;
+    transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Efeito de foco no textarea */
+textarea:focus {
+    border-color: #1f3b5f;
+    box-shadow: 0 0 8px rgba(31,59,95,0.2);
+    outline: none;
 }
 
 /* Input de arquivo */
 input[type="file"] {
-    margin-bottom: 10px;
+    margin-bottom: 15px;
     font-family: inherit;
+    color: #555;
 }
 
 /* Botão de envio */
 button {
-    padding: 10px 20px;
-    background-color: #4CAF50; /* verde */
-    color: white;
+    padding: 12px 20px;
+    background-color: #1f3b5f;
+    color: #ffffff;
     border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 14px;
-    width: 100%;
-    transition: background-color 0.3s ease;
-}
-
-/* Efeito hover no botão */
-button:hover {
-    background-color: #45a049;
-}
-
-/* Área de exibição de resultados */
-#result {
-    margin-top: 20px;
-    background-color: #e6f0ff; /* azul leve */
-    padding: 15px;
     border-radius: 8px;
-    border: 1px solid #cce0ff; /* contraste sutil */
-    box-sizing: border-box;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: 500;
+    width: 100%;
+    transition: background-color 0.3s ease, transform 0.2s ease;
 }
 
-/* Categoria e resposta */
-#result h2, #result h3, #result p {
+button:hover {
+    background-color: #2e527a;
+    transform: translateY(-2px);
+}
+
+button:active {
+    transform: translateY(0);
+}
+
+/* Área de resultados */
+#result {
+    margin-top: 25px;
+    background-color: rgba(240, 244, 255, 0.9);
+    padding: 20px;
+    border-radius: 10px;
+    border-left: 5px solid #1f3b5f;
+    box-shadow: 0 5px 15px rgba(31,59,95,0.05);
+}
+
+#result h2 {
     margin: 5px 0;
+    color: #1f3b5f;
+    font-size: 20px;
+}
+
+#result h3 {
+    margin: 10px 0 5px 0;
+    color: #3a4a6b;
+    font-size: 16px;
+}
+
+#result p {
+    margin: 0;
+    font-size: 15px;
     color: #333;
     word-wrap: break-word;
 }
 
 /* Responsividade para telas pequenas */
-@media (max-width: 400px) {
+@media (max-width: 480px) {
     .container {
-        padding: 20px;
+        padding: 25px 20px; /* Ajuste lateral também em mobile */
     }
     textarea {
-        height: 120px;
+        height: 130px;
+        padding: 12px;
     }
     button {
-        padding: 8px 15px;
-        font-size: 13px;
+        font-size: 15px;
+        padding: 10px;
+    }
+    #result h2 {
+        font-size: 18px;
+    }
+    #result h3 {
+        font-size: 14px;
+    }
+    #result p {
+        font-size: 14px;
     }
 }
