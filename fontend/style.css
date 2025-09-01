@@ -1,0 +1,96 @@
+/* Estilo global do corpo da página */
+body {
+    font-family: Arial, sans-serif;
+    background-color: #f0f2f5; /* fundo leve */
+    display: flex;
+    justify-content: center;
+    padding: 20px;
+    margin: 0;
+}
+
+/* Container centralizado com sombra e borda arredondada */
+.container {
+    background-color: white;
+    padding: 30px;
+    border-radius: 10px;
+    box-shadow: 0px 0px 10px rgba(0,0,0,0.1);
+    width: 90%;
+    max-width: 500px; /* largura máxima */
+    box-sizing: border-box;
+}
+
+/* Título da aplicação */
+h1 {
+    text-align: center;
+    margin-bottom: 20px;
+    color: #333;
+}
+
+/* Textarea para digitar o email */
+textarea {
+    width: 100%;
+    height: 150px;
+    margin-bottom: 10px;
+    padding: 10px;
+    resize: none; /* evita redimensionamento */
+    font-family: inherit;
+    font-size: 14px;
+    box-sizing: border-box;
+    border: 1px solid #ccc;
+    border-radius: 5px;
+}
+
+/* Input de arquivo */
+input[type="file"] {
+    margin-bottom: 10px;
+    font-family: inherit;
+}
+
+/* Botão de envio */
+button {
+    padding: 10px 20px;
+    background-color: #4CAF50; /* verde */
+    color: white;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 14px;
+    width: 100%;
+    transition: background-color 0.3s ease;
+}
+
+/* Efeito hover no botão */
+button:hover {
+    background-color: #45a049;
+}
+
+/* Área de exibição de resultados */
+#result {
+    margin-top: 20px;
+    background-color: #e6f0ff; /* azul leve */
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #cce0ff; /* contraste sutil */
+    box-sizing: border-box;
+}
+
+/* Categoria e resposta */
+#result h2, #result h3, #result p {
+    margin: 5px 0;
+    color: #333;
+    word-wrap: break-word;
+}
+
+/* Responsividade para telas pequenas */
+@media (max-width: 400px) {
+    .container {
+        padding: 20px;
+    }
+    textarea {
+        height: 120px;
+    }
+    button {
+        padding: 8px 15px;
+        font-size: 13px;
+    }
+}

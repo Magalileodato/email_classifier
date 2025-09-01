@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Email Classifier</title>
+    <!-- Link para o CSS da página -->
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Container centralizado para a aplicação -->
+    <div class="container">
+        <!-- Título da aplicação -->
+        <h1>Email Classifier</h1>
+        
+        <!-- =========================
+             Formulário de envio de email
+             ========================= -->
+        
+        <!-- Textarea permite colar o texto do email -->
+        <textarea id="emailText" placeholder="Cole o texto do email aqui..."></textarea>
+        
+        <!-- Input para envio de arquivo (txt ou pdf) -->
+        <input type="file" id="emailFile" accept=".txt,.pdf">
+        <!-- 'accept' filtra tipos de arquivo permitidos -->
+
+        <!-- Botão para enviar dados para o backend -->
+        <button id="submitBtn">Classificar Email</button>
+
+        <!-- =========================
+             Área de exibição de resultados
+             ========================= -->
+        <div id="result">
+            <h2>Categoria: <span id="category">---</span></h2>
+            <h3>Resposta Sugerida:</h3>
+            <p id="response">---</p>
+        </div>
+    </div>
+
+    <!-- =========================
+         Script JS que envia dados para backend
+         ========================= -->
+    <script>
+        // =========================
+        // Ajuste automático da URL do backend
+        // =========================
+        // Se estiver local, use localhost:5000
+        // Se estiver no Render, use a URL pública do serviço
+        const RENDER_URL = window.location.hostname.includes('localhost') 
+            ? 'http://127.0.0.1:5000' 
+            : 'https://SEU_SERVICO.onrender.com'; // <-- substitua pela sua URL pública
+
+        // =========================
+        // Seleciona o botão de envio e adiciona evento de clique
+        // =========================
+        document.getElementById('submitBtn').addEventListener('click', async () => {
+            const emailText = document.getElementById('emailText').value;
+            const emailFile = document.getElementById('emailFile').files[0];
+
+            try {
+                let response;
+
+                // =========================
+                // Caso 1: texto digitado
+                // =========================
+                if (emailText) {
+                    response = await fetch(`${RENDER_URL}/process`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ text: emailText })
+                    });
+
+                // =========================
+                // Caso 2: arquivo enviado
+                // =========================
+                } else if (emailFile) {
+                    const formData = new FormData();
+                    formData.append('file', emailFile);
+
+                    response = await fetch(`${RENDER_URL}/process-file`, {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                // =========================
+                // Caso 3: nenhum dado enviado
+                // =========================
+                } else {
+                    alert("Por favor, insira o texto ou envie um arquivo.");
+                    return;
+                }
+
+                // =========================
+                // Processa a resposta do backend
+                // =========================
+                const data = await response.json();
+                document.getElementById('category').innerText = data.category;
+                document.getElementById('response').innerText = data.suggested_response;
+
+            } catch (error) {
+                alert("Erro ao processar o email: " + error);
+            }
+        });
+    </script>
+</body>
+</html>

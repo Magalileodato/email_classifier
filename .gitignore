@@ -1,0 +1,68 @@
+# ------------------------
+# Ambientes virtuais
+# ------------------------
+venv/
+env/
+ENV/
+.venv/
+
+# ------------------------
+# Variáveis de ambiente / segredos
+# ------------------------
+.env
+
+# ------------------------
+# Cache do Python
+# ------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+
+# ------------------------
+# Arquivos temporários
+# ------------------------
+*.log
+*.tmp
+*.swp
+.DS_Store
+Thumbs.db
+
+# ------------------------
+# Configurações de IDEs
+# ------------------------
+.vscode/
+.idea/
+
+# ------------------------
+# Testes e caches de frameworks
+# ------------------------
+.pytest_cache/
+.coverage
+.tox/
+.nox/
+htmlcov/
+*.cover
+
+# ------------------------
+# Arquivos de banco de dados
+# ------------------------
+*.db
+*.sqlite3
+
+# ------------------------
+# Arquivos de build / distribuição
+# ------------------------
+build/
+dist/
+*.egg-info/
+*.egg
+*.whl
+pip-wheel-metadata/
+Pipfile.lock
+poetry.lock
+
+# ------------------------
+# Arquivos de backup
+# ------------------------
+*.bak
+*.old

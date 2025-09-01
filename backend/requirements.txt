@@ -1,0 +1,17 @@
+# Backend web
+flask                 # Framework web leve
+flask-cors            # Permite comunicação do frontend com backend hospedado em domínios diferentes
+
+# NLP e IA
+transformers>=4.39.0  # Modelos Hugging Face para classificação
+torch                 # Necessário para transformers; CPU é suficiente, mas pesado no primeiro download
+nltk                  # Processamento de linguagem natural (stopwords, stemming)
+
+# Manipulação de arquivos PDF
+PyPDF2
+
+# Variáveis de ambiente
+python-dotenv         # Para carregar OPENAI_API_KEY do arquivo .env
+
+# Integração com ChatGPT
+openai                # Cliente oficial OpenAI API
