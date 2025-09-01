@@ -11,8 +11,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copia todo o projeto para o container
 COPY . .
 
-# Expõe a porta usada pelo Gunicorn
-EXPOSE 5000
+# Expõe a porta (Render define $PORT automaticamente)
+EXPOSE 10000
 
-# Comando para iniciar o aplicativo (main.py contém "app")
-CMD ["gunicorn", "main:app", "--bind", "0.0.0.0:5000"]
+# Comando para iniciar o aplicativo
+CMD ["sh", "-c", "gunicorn main:app --bind 0.0.0.0:$PORT"]
+
