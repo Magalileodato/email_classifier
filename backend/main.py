@@ -36,15 +36,30 @@ load_dotenv()  # Certifique-se de ter OPENAI_API_KEY definida
 # -------------------------------
 # Importa módulos internos
 # -------------------------------
-from classifier import EmailClassifier
 from response_generator import generate_response
 from utils import preprocess_text, extract_text_from_file
 
 # -------------------------------
-# Inicializa Flask e o classificador
+# Inicializa Flask
 # -------------------------------
 app = Flask(__name__)
-classifier = EmailClassifier()
+
+# -------------------------------
+# Lazy loading do classificador
+# -------------------------------
+classifier = None
+
+def get_classifier():
+    """
+    Retorna a instância do EmailClassifier.
+    Carrega apenas na primeira requisição (lazy loading)
+    e usa modelo menor para reduzir memória.
+    """
+    global classifier
+    if classifier is None:
+        from classifier import EmailClassifier
+        classifier = EmailClassifier(model_name="facebook/distilbart-large-mnli")  # modelo leve
+    return classifier
 
 # -------------------------------
 # Detecta ambiente de execução
@@ -99,9 +114,10 @@ def app_index():
 # -------------------------------
 @app.get("/health")
 def health():
+    cls = get_classifier()
     return jsonify({
         "status": "ok",
-        "model_loaded": classifier.model_loaded
+        "model_loaded": cls.model_loaded
     }), 200
 
 # -------------------------------
@@ -119,7 +135,8 @@ def process_text():
         return jsonify({"error": "Campo 'text' vazio ou ausente."}), 400
 
     processed = preprocess_text(text)
-    label, scores = classifier.classify(text)
+    cls = get_classifier()
+    label, scores = cls.classify(text)
 
     try:
         reply = generate_response(label, original_text=text, use_chatgpt=True)
@@ -159,7 +176,8 @@ def process_file():
         return jsonify({"error": "Não foi possível extrair texto do arquivo."}), 400
 
     processed = preprocess_text(text)
-    label, scores = classifier.classify(text)
+    cls = get_classifier()
+    label, scores = cls.classify(text)
 
     try:
         reply = generate_response(label, original_text=text, use_chatgpt=True)
@@ -184,3 +202,4 @@ if __name__ == "__main__":
 
     logger.info(f"Rodando backend em {host}:{port} (Render={IS_RENDER})")
     app.run(host=host, port=port, debug=debug)
+

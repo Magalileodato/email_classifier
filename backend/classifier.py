@@ -6,29 +6,15 @@ CANDIDATE_LABELS = ["Produtivo", "Improdutivo"]
 
 
 class EmailClassifier:
-    def __init__(self) -> None:
+    def __init__(self, model_name: str = "facebook/distilbart-large-mnli") -> None:
         """
         Inicializa o classificador de e-mails.
-        - Tenta carregar o modelo Hugging Face (zero-shot classification).
-        - Se não conseguir, usa um fallback baseado em palavras-chave.
+        - Não carrega o modelo imediatamente (lazy loading).
+        - Se o modelo não puder ser carregado, usa fallback.
         """
         self.pipeline = None
         self.model_loaded = False
-
-        try:
-            # Importação dentro do construtor (lazy import)
-            from transformers import pipeline  
-
-            # Carrega a pipeline zero-shot (faz download do modelo se necessário)
-            self.pipeline = pipeline("zero-shot-classification", model="facebook/bart-large-mnli")
-            self.model_loaded = True
-
-        except Exception as e:
-            # Caso o modelo não possa ser carregado (ex: sem internet),
-            # o sistema continua funcionando com regras simples.
-            print(f"[classifier] Aviso: não foi possível carregar o modelo HF. Usando fallback. Motivo: {e}")
-            self.pipeline = None
-            self.model_loaded = False
+        self.model_name = model_name  # modelo leve para reduzir memória
 
         # Palavras-chave usadas no fallback baseado em regras
         self.prod_keywords = {
@@ -41,6 +27,21 @@ class EmailClassifier:
             "obrigado", "agradeço", "feliz", "parabéns", "bom dia", "boa tarde", "boa noite",
             "atenciosamente", "saudações", "boas festas", "natal", "ano novo", "congratulações"
         }
+
+    def _load_pipeline(self):
+        """
+        Carrega o pipeline Hugging Face apenas na primeira requisição.
+        """
+        if self.pipeline is None:
+            try:
+                from transformers import pipeline  # importação lazy
+
+                self.pipeline = pipeline("zero-shot-classification", model=self.model_name)
+                self.model_loaded = True
+            except Exception as e:
+                print(f"[classifier] Aviso: não foi possível carregar o modelo HF. Usando fallback. Motivo: {e}")
+                self.pipeline = None
+                self.model_loaded = False
 
     def classify(self, text: str) -> Tuple[str, Dict[str, float]]:
         """
@@ -56,48 +57,38 @@ class EmailClassifier:
             return "Improdutivo", {"Produtivo": 0.0, "Improdutivo": 1.0}
 
         # --- 1) Caminho preferencial: modelo zero-shot da Hugging Face ---
+        self._load_pipeline()
         if self.pipeline is not None:
             try:
                 result = self.pipeline(text, candidate_labels=CANDIDATE_LABELS)
 
-                # Extrai labels e scores retornados pelo modelo
                 labels = result.get("labels", [])
                 scores = result.get("scores", [])
 
-                # Cria dicionário {label: score}
                 score_map = {lbl: float(scr) for lbl, scr in zip(labels, scores)}
-
-                # O labels[0] vem com a maior probabilidade
                 predicted = labels[0] if labels else "Produtivo"
 
-                # Garante que sempre haja as duas chaves
                 for lbl in CANDIDATE_LABELS:
                     score_map.setdefault(lbl, 0.0)
 
                 return predicted, score_map
 
             except Exception as e:
-                # Caso a inferência falhe, usa o fallback
                 print(f"[classifier] Falha na inferência HF. Caindo para fallback. Motivo: {e}")
 
         # --- 2) Fallback: baseado em palavras-chave ---
         lowered = text.lower()
-
-        # Conta quantas keywords de cada categoria aparecem no texto
         prod_hits = sum(1 for kw in self.prod_keywords if kw in lowered)
         impr_hits = sum(1 for kw in self.improd_keywords if kw in lowered)
 
-        # Heurística simples para decidir a classe final
         if prod_hits > impr_hits:
             label = "Produtivo"
         elif impr_hits > prod_hits:
             label = "Improdutivo"
         else:
-            # Empate: defaulta para Produtivo (prioriza ação)
             label = "Produtivo"
 
-        # Converte contagens em "pseudo-scores" normalizados (0..1)
-        total = max(prod_hits + impr_hits, 1)  # evita divisão por zero
+        total = max(prod_hits + impr_hits, 1)
         scores = {
             "Produtivo": prod_hits / total,
             "Improdutivo": impr_hits / total
