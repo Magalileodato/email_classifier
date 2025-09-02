@@ -3,43 +3,32 @@
 <head>
     <meta charset="UTF-8">
     <title>Email Classifier</title>
-    
+
     <!-- =========================
          Favicon da aplicação
          ========================= -->
     <link rel="icon" type="image/x-icon" href="favicon.ico">
-    
+
     <!-- =========================
          Link para o CSS da página
          ========================= -->
     <link rel="stylesheet" href="/app/style.css">
+
+    <!-- (Opcional) Se front e back estiverem em DOMÍNIOS DIFERENTES,
+         descomente e ajuste a meta abaixo:
+         <meta name="backend-url" content="https://SEU-BACKEND.onrender.com">
+    -->
 </head>
 <body>
-    <!-- =========================
-         Container centralizado para a aplicação
-         ========================= -->
     <div class="container">
-        <!-- =========================
-             Título da aplicação
-             ========================= -->
         <h1>Email Classifier</h1>
-        
-        <!-- =========================
-             Formulário de envio de email
-             ========================= -->
-        <!-- Textarea permite colar o texto do email -->
-        <textarea id="emailText" placeholder="Cole o texto do email aqui..."></textarea>
-        
-        <!-- Input para envio de arquivo (txt ou pdf) -->
-        <input type="file" id="emailFile" accept=".txt,.pdf">
-        <!-- 'accept' filtra tipos de arquivo permitidos -->
 
-        <!-- Botão para enviar dados para o backend -->
+        <textarea id="emailText" placeholder="Cole o texto do email aqui..."></textarea>
+
+        <input type="file" id="emailFile" accept=".txt,.pdf">
+
         <button id="submitBtn">Classificar Email</button>
 
-        <!-- =========================
-             Área de exibição de resultados
-             ========================= -->
         <div id="result">
             <h2>Categoria: <span id="category">---</span></h2>
             <h3>Resposta Sugerida:</h3>
@@ -47,21 +36,21 @@
         </div>
     </div>
 
-    <!-- =========================
-         Script JS que envia dados para backend
-         ========================= -->
     <script>
         // =========================
-        // Ajuste automático da URL do backend
-        // Local: localhost:5000
-        // Render: URL pública do serviço
+        // Descoberta de BACKEND_URL
+        // - Se houver <meta name="backend-url" ...> usa ela (domínios separados)
+        // - Caso contrário, usa rotas relativas (mesma origem -> sem CORS)
         // =========================
-        const BACKEND_URL = window.location.hostname.includes('localhost') 
-            ? 'http://127.0.0.1:5000' 
-            : 'https://SEU_SERVICO.onrender.com'; // <-- substitua pela sua URL pública
+        function getBackendBase() {
+            const meta = document.querySelector('meta[name="backend-url"]');
+            const configured = meta && meta.getAttribute("content");
+            return configured ? configured.replace(/\/+$/, "") : "";
+        }
+        const BACKEND_BASE = getBackendBase();
 
         // =========================
-        // Seleciona o botão de envio e adiciona evento de clique
+        // Envio de texto/arquivo
         // =========================
         document.getElementById('submitBtn').addEventListener('click', async () => {
             const emailText = document.getElementById('emailText').value.trim();
@@ -69,18 +58,19 @@
 
             try {
                 let response;
-
                 if (emailText) {
-                    response = await fetch(`${BACKEND_URL}/process`, {
+                    const url = (BACKEND_BASE || "") + "/process";
+                    response = await fetch(url, {
                         method: 'POST',
                         headers: { 'Content-Type': 'application/json' },
+                        // Importante: SEM credentials: 'include' (não usamos cookies)
                         body: JSON.stringify({ text: emailText })
                     });
                 } else if (emailFile) {
                     const formData = new FormData();
                     formData.append('file', emailFile);
-
-                    response = await fetch(`${BACKEND_URL}/process-file`, {
+                    const url = (BACKEND_BASE || "") + "/process-file";
+                    response = await fetch(url, {
                         method: 'POST',
                         body: formData
                     });

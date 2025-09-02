@@ -13,7 +13,7 @@ Funcionalidades:
 
 import os
 import logging
-from flask import Flask, request, jsonify, send_from_directory
+from flask import Flask, request, jsonify, send_from_directory, abort
 from dotenv import load_dotenv
 from flask_cors import CORS
 
@@ -48,33 +48,64 @@ IS_RENDER = RENDER_PORT is not None
 # -------------------------------
 app = Flask(__name__)
 
+# Limite global de upload (protege CPU/memória)
+app.config["MAX_CONTENT_LENGTH"] = int(os.getenv("MAX_CONTENT_LENGTH_MB", "5")) * 1024 * 1024
+
 # -------------------------------
-# Configura CORS para frontend (local + produção)
+# Configura CORS (ajuste mínimo, correto)
+# - Sem credenciais (você não usa cookies/sessão)
+# - Origens comuns em dev + produção
+# - Você pode sobrescrever por env: FRONTEND_ORIGINS="https://seu-front.onrender.com,https://outro"
 # -------------------------------
-frontend_origins = [
-    "http://127.0.0.1:5000",                     # Local para testes
-    "http://localhost:5000",                     # Local alternativo
-    "https://email-classificacao.onrender.com"   # Produção
+FRONTEND_ORIGINS_ENV = os.getenv("FRONTEND_ORIGINS", "")
+frontend_origins = [o.strip() for o in FRONTEND_ORIGINS_ENV.split(",") if o.strip()] or [
+    "http://127.0.0.1:5000",
+    "http://localhost:5000",
+    "http://127.0.0.1:3000",
+    "http://localhost:3000",
+    "http://127.0.0.1:5173",
+    "http://localhost:5173",
+    "http://127.0.0.1:5500",
+    "http://localhost:5500",
+    "https://email-classificacao.onrender.com"
 ]
 
 CORS(
     app,
-    resources={r"/*": {"origins": frontend_origins}},
-    supports_credentials=True,
+    resources={
+        r"/process": {"origins": frontend_origins},
+        r"/process-file": {"origins": frontend_origins},
+        r"/health": {"origins": frontend_origins},
+        r"/": {"origins": frontend_origins},
+        r"/app*": {"origins": frontend_origins},
+    },
+    supports_credentials=False,  # importante: desativa modo "credenciais"
+    allow_headers=["Content-Type", "Authorization"],
+    methods=["GET", "POST", "OPTIONS"],
+    max_age=600,  # cache do preflight
 )
+
+# Log útil para depurar origem real recebida
+@app.before_request
+def _debug_origin():
+    if request.method == "OPTIONS":
+        logger.info(f"[CORS] Preflight de {request.headers.get('Origin')} -> {request.path}")
+    elif request.path in ("/process", "/process-file", "/health"):
+        logger.info(f"[CORS] Origin recebido: {request.headers.get('Origin')} -> {request.path}")
 
 # -------------------------------
 # Caminho para frontend
 # -------------------------------
 FRONTEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../frontend"))
-logger.info(f"Frontend dir: {FRONTEND_DIR}")
+logger.info(f"Frontend dir: {FRONTEND_DIR} (exists={os.path.isdir(FRONTEND_DIR)})")
 
 # -------------------------------
 # Favicon (opcional)
 # -------------------------------
 @app.get("/favicon.ico")
 def favicon():
-    """Serve o favicon para o navegador."""
+    if not os.path.isdir(FRONTEND_DIR):
+        abort(404)
     return send_from_directory(FRONTEND_DIR, "favicon.ico")
 
 # -------------------------------
@@ -84,11 +115,12 @@ classifier = None
 def get_classifier():
     """
     Retorna instância do EmailClassifier.
-    Carrega apenas na primeira requisição para reduzir uso de memória.
+    Carrega apenas na primeira requisição para reduzir uso de memória/CPU no Render.
     """
     global classifier
     if classifier is None:
         from classifier import EmailClassifier
+        # Mantém seu modelo padrão (se for pesado, considere variável de ambiente p/ alternar)
         classifier = EmailClassifier(model_name="facebook/distilbart-large-mnli")
     return classifier
 
@@ -106,11 +138,15 @@ def index():
 @app.get("/app")
 def app_index():
     """Retorna página principal do frontend"""
+    if not os.path.isdir(FRONTEND_DIR):
+        return "Frontend não encontrado.", 404
     return send_from_directory(FRONTEND_DIR, "index.html")
 
 @app.get("/app/<path:path>")
 def serve_front(path):
     """Retorna arquivos estáticos do frontend"""
+    if not os.path.isdir(FRONTEND_DIR):
+        return "Frontend não encontrado.", 404
     return send_from_directory(FRONTEND_DIR, path)
 
 # -------------------------------
