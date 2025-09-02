@@ -1,16 +1,14 @@
 """
 Backend principal usando Flask.
-Funciona tanto localmente quanto no Render.
-
+Funciona localmente e no Render, com suporte a CORS e lazy loading do classificador.
 Funcionalidades:
 - Health check (/health)
 - Processamento de texto (/process)
 - Processamento de arquivos (/process-file)
 - Rota de teste simples (/)
 - Rota para frontend (/app)
-- Integração com ChatGPT via OpenAI API (usando variável de ambiente)
+- Integração opcional com ChatGPT
 - Fallback simulado caso a API falhe
-- Suporte a CORS para permitir chamadas do frontend
 """
 
 import os
@@ -29,9 +27,9 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 # -------------------------------
-# Carrega variáveis do arquivo .env
+# Carrega variáveis de ambiente
 # -------------------------------
-load_dotenv()  # Certifique-se de ter OPENAI_API_KEY definida
+load_dotenv()
 
 # -------------------------------
 # Importa módulos internos
@@ -40,109 +38,120 @@ from response_generator import generate_response
 from utils import preprocess_text, extract_text_from_file
 
 # -------------------------------
+# Detecta se está rodando no Render
+# -------------------------------
+RENDER_PORT = os.getenv("PORT")
+IS_RENDER = RENDER_PORT is not None
+
+# -------------------------------
 # Inicializa Flask
 # -------------------------------
 app = Flask(__name__)
 
 # -------------------------------
-# Lazy loading do classificador
-# -------------------------------
-classifier = None
-
-def get_classifier():
-    """
-    Retorna a instância do EmailClassifier.
-    Carrega apenas na primeira requisição (lazy loading)
-    e usa modelo menor para reduzir memória.
-    """
-    global classifier
-    if classifier is None:
-        from classifier import EmailClassifier
-        classifier = EmailClassifier(model_name="facebook/distilbart-large-mnli")  # modelo leve
-    return classifier
-
-# -------------------------------
-# Detecta ambiente de execução
-# -------------------------------
-RENDER_PORT = os.getenv("PORT")   # Se existir, estamos no Render
-IS_RENDER = RENDER_PORT is not None
-
-# -------------------------------
-# Configura CORS para frontend local e produção
+# Configura CORS para frontend (local + produção)
 # -------------------------------
 frontend_origins = [
-    "http://127.0.0.1:5500",          # Frontend local
-    "https://SEU_FRONTEND_DOMINIO.com" # Frontend produção
+    "http://127.0.0.1:5000",                     # Local para testes
+    "http://localhost:5000",                     # Local alternativo
+    "https://email-classificacao.onrender.com"   # Produção
 ]
 
 CORS(
     app,
     resources={r"/*": {"origins": frontend_origins}},
     supports_credentials=True,
-    methods=["GET", "POST", "OPTIONS"]
 )
 
 # -------------------------------
-# Rotas OPTIONS para preflight (CORS)
+# Caminho para frontend
 # -------------------------------
-@app.route("/process", methods=["OPTIONS"])
-@app.route("/process-file", methods=["OPTIONS"])
-def handle_options():
-    """Responde às requisições OPTIONS enviadas pelo navegador."""
-    return "", 200
+FRONTEND_DIR = os.path.abspath(os.path.join(os.path.dirname(__file__), "../frontend"))
+logger.info(f"Frontend dir: {FRONTEND_DIR}")
 
 # -------------------------------
-# Rota de teste simples /
+# Favicon (opcional)
+# -------------------------------
+@app.get("/favicon.ico")
+def favicon():
+    """Serve o favicon para o navegador."""
+    return send_from_directory(FRONTEND_DIR, "favicon.ico")
+
+# -------------------------------
+# Lazy loading do classificador
+# -------------------------------
+classifier = None
+def get_classifier():
+    """
+    Retorna instância do EmailClassifier.
+    Carrega apenas na primeira requisição para reduzir uso de memória.
+    """
+    global classifier
+    if classifier is None:
+        from classifier import EmailClassifier
+        classifier = EmailClassifier(model_name="facebook/distilbart-large-mnli")
+    return classifier
+
+# -------------------------------
+# Rota de teste simples
 # -------------------------------
 @app.get("/")
 def index():
-    return "Backend ativo! Use /process, /process-file ou /app para frontend.", 200
+    """Rota de teste para verificar se o backend está ativo."""
+    return "Backend ativo! Use /process, /process-file ou /app.", 200
 
 # -------------------------------
-# Rota para servir frontend
+# Rotas do frontend
 # -------------------------------
 @app.get("/app")
 def app_index():
-    """
-    Serve arquivo index.html do frontend.
-    Caminho relativo: backend/main.py -> ../front/index.html
-    """
-    return send_from_directory("../front", "index.html")
+    """Retorna página principal do frontend"""
+    return send_from_directory(FRONTEND_DIR, "index.html")
+
+@app.get("/app/<path:path>")
+def serve_front(path):
+    """Retorna arquivos estáticos do frontend"""
+    return send_from_directory(FRONTEND_DIR, path)
 
 # -------------------------------
 # Health check
 # -------------------------------
 @app.get("/health")
 def health():
+    """
+    Verifica status do backend e se o modelo está carregado.
+    Útil para monitoramento e testes.
+    """
     cls = get_classifier()
-    return jsonify({
-        "status": "ok",
-        "model_loaded": cls.model_loaded
-    }), 200
+    return jsonify({"status": "ok", "model_loaded": cls.model_loaded}), 200
 
 # -------------------------------
 # Endpoint para processar texto
 # -------------------------------
 @app.post("/process")
 def process_text():
-    logger.info(f"Request data: {request.data}")
-
+    """
+    Recebe JSON com campo 'text', pré-processa, classifica
+    e retorna categoria, scores e resposta sugerida.
+    """
     data = request.get_json(force=True) or {}
     text = (data.get("text") or "").strip()
 
     if not text:
-        logger.warning("Campo 'text' vazio ou ausente.")
         return jsonify({"error": "Campo 'text' vazio ou ausente."}), 400
 
+    # Pré-processamento leve
     processed = preprocess_text(text)
+
+    # Classificação lazy
     cls = get_classifier()
     label, scores = cls.classify(text)
 
+    # Gera resposta (ChatGPT ou simulado)
     try:
         reply = generate_response(label, original_text=text, use_chatgpt=True)
-    except Exception as e:
+    except Exception:
         reply = f"[SIMULADO] Seu texto foi classificado como '{label}'."
-        logger.warning(f"Falha ao gerar resposta via ChatGPT: {e}")
 
     return jsonify({
         "category": label,
@@ -152,38 +161,42 @@ def process_text():
     }), 200
 
 # -------------------------------
-# Endpoint para processar arquivos (.txt ou .pdf)
+# Endpoint para processar arquivos
 # -------------------------------
 @app.post("/process-file")
 def process_file():
+    """
+    Recebe arquivo, extrai texto, pré-processa, classifica
+    e retorna categoria, scores e resposta sugerida.
+    """
     if 'file' not in request.files:
-        logger.warning("Arquivo não enviado no campo 'file'.")
         return jsonify({"error": "Envie um arquivo no campo 'file'."}), 400
 
     file = request.files['file']
     if file.filename == '':
-        logger.warning("Nome de arquivo vazio.")
         return jsonify({"error": "Nome de arquivo vazio."}), 400
 
+    # Extrai texto do arquivo
     try:
         text = extract_text_from_file(file)
     except Exception as e:
-        logger.error(f"Falha ao ler arquivo: {e}")
         return jsonify({"error": f"Falha ao ler arquivo: {e}"}), 500
 
     if not text.strip():
-        logger.warning("Não foi possível extrair texto do arquivo.")
         return jsonify({"error": "Não foi possível extrair texto do arquivo."}), 400
 
+    # Pré-processamento
     processed = preprocess_text(text)
+
+    # Classificação lazy
     cls = get_classifier()
     label, scores = cls.classify(text)
 
+    # Gera resposta (ChatGPT ou simulado)
     try:
         reply = generate_response(label, original_text=text, use_chatgpt=True)
-    except Exception as e:
+    except Exception:
         reply = f"[SIMULADO] Seu texto foi classificado como '{label}'."
-        logger.warning(f"Falha ao gerar resposta via ChatGPT: {e}")
 
     return jsonify({
         "category": label,
@@ -198,8 +211,6 @@ def process_file():
 if __name__ == "__main__":
     port = int(RENDER_PORT) if IS_RENDER else 5000
     host = "0.0.0.0" if IS_RENDER else "127.0.0.1"
-    debug = False if IS_RENDER else True
-
+    debug = not IS_RENDER
     logger.info(f"Rodando backend em {host}:{port} (Render={IS_RENDER})")
     app.run(host=host, port=port, debug=debug)
-

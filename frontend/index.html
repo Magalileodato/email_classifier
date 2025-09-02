@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Email Classifier</title>
+    
+    <!-- =========================
+         Favicon da aplicação
+         ========================= -->
+    <link rel="icon" type="image/x-icon" href="favicon.ico">
+    
+    <!-- =========================
+         Link para o CSS da página
+         ========================= -->
+    <link rel="stylesheet" href="/app/style.css">
+</head>
+<body>
+    <!-- =========================
+         Container centralizado para a aplicação
+         ========================= -->
+    <div class="container">
+        <!-- =========================
+             Título da aplicação
+             ========================= -->
+        <h1>Email Classifier</h1>
+        
+        <!-- =========================
+             Formulário de envio de email
+             ========================= -->
+        <!-- Textarea permite colar o texto do email -->
+        <textarea id="emailText" placeholder="Cole o texto do email aqui..."></textarea>
+        
+        <!-- Input para envio de arquivo (txt ou pdf) -->
+        <input type="file" id="emailFile" accept=".txt,.pdf">
+        <!-- 'accept' filtra tipos de arquivo permitidos -->
+
+        <!-- Botão para enviar dados para o backend -->
+        <button id="submitBtn">Classificar Email</button>
+
+        <!-- =========================
+             Área de exibição de resultados
+             ========================= -->
+        <div id="result">
+            <h2>Categoria: <span id="category">---</span></h2>
+            <h3>Resposta Sugerida:</h3>
+            <p id="response">---</p>
+        </div>
+    </div>
+
+    <!-- =========================
+         Script JS que envia dados para backend
+         ========================= -->
+    <script>
+        // =========================
+        // Ajuste automático da URL do backend
+        // Local: localhost:5000
+        // Render: URL pública do serviço
+        // =========================
+        const BACKEND_URL = window.location.hostname.includes('localhost') 
+            ? 'http://127.0.0.1:5000' 
+            : 'https://SEU_SERVICO.onrender.com'; // <-- substitua pela sua URL pública
+
+        // =========================
+        // Seleciona o botão de envio e adiciona evento de clique
+        // =========================
+        document.getElementById('submitBtn').addEventListener('click', async () => {
+            const emailText = document.getElementById('emailText').value.trim();
+            const emailFile = document.getElementById('emailFile').files[0];
+
+            try {
+                let response;
+
+                if (emailText) {
+                    response = await fetch(`${BACKEND_URL}/process`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ text: emailText })
+                    });
+                } else if (emailFile) {
+                    const formData = new FormData();
+                    formData.append('file', emailFile);
+
+                    response = await fetch(`${BACKEND_URL}/process-file`, {
+                        method: 'POST',
+                        body: formData
+                    });
+                } else {
+                    alert("Por favor, insira o texto ou envie um arquivo.");
+                    return;
+                }
+
+                if (!response.ok) {
+                    throw new Error(`Erro do servidor: ${response.status} ${response.statusText}`);
+                }
+
+                const data = await response.json();
+                document.getElementById('category').innerText = data.category || '---';
+                document.getElementById('response').innerText = data.suggested_response || '---';
+
+            } catch (error) {
+                console.error("Erro ao processar o email:", error);
+                alert("Erro ao processar o email. Veja o console para mais detalhes.");
+            }
+        });
+    </script>
+</body>
+</html>
